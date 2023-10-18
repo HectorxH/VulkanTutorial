@@ -148,10 +148,12 @@
     <ClCompile Include="debugLayer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="queues.cpp" />
+    <ClCompile Include="swapChain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="debugLayer.h" />
     <ClInclude Include="queues.h" />
+    <ClInclude Include="swapChain.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

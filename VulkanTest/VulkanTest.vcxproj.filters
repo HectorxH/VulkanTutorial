@@ -24,12 +24,18 @@
     <ClCompile Include="queues.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="swapChain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="debugLayer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="queues.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="swapChain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
