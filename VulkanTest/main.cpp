@@ -5,11 +5,20 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <vector>
-#include <algorithm>
-#include <set>
+#include <format>
+
+#include "debugLayer.h"
+#include "queues.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
+
+const std::vector<const char*> validationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
+
+extern const bool enableValidationLayers;
+
 
 class HelloTriangleApplication {
 public:
@@ -21,10 +30,100 @@ public:
     }
 
 private:
-    GLFWwindow* window;
-    VkInstance instance;
+    GLFWwindow* window = {};
+    VkInstance instance = {};
+    VkDebugUtilsMessengerEXT debugMessenger = {};
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    VkDevice device = {};
+
+    bool checkValidationLayerSupport() {
+        uint32_t layerCount;
+        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+        std::vector<VkLayerProperties> availableLayers(layerCount);
+        vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+        for (const char* layerName : validationLayers) {
+            bool layerFound = false;
+
+            for (const auto& layerProperties : availableLayers) {
+                if (strcmp(layerName, layerProperties.layerName) == 0) {
+                    layerFound = true;
+                    break;
+                }
+            }
+
+            if (!layerFound) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool checkExtensionSupport(std::vector<const char*>& requiredExtensions, std::vector<VkExtensionProperties>& aveilableExtensions) {
+        std::cout << "available extensions:\n";
+        for (const auto& extension : aveilableExtensions) {
+            std::cout << '\t' << extension.extensionName << '\n';
+        }
+
+        bool all_available = true;
+        std::cout << "required extensions:\n";
+        for (const char* required : requiredExtensions) {
+            std::cout << std::format("\t{} ", required);
+
+            bool is_available = false;
+            for (const auto& available : aveilableExtensions) {
+                if (strcmp(required, available.extensionName) == 0) {
+                    is_available = true;
+                    break;
+                }
+            }
+
+            if (is_available) {
+                std::cout << "AVAILABLE\n";
+            }
+            else {
+                std::cout << "MISSING\n";
+                all_available = false;
+            }
+        }
+
+        return all_available;
+    }
+
+    std::vector<const char*> getRequiredExtensions() {
+        uint32_t glfwExtensionCount = 0;
+        const char** glfwExtensions;
+        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        if (glfwExtensions == NULL) {
+            throw std::runtime_error("failed to get required extensions!");
+        }
+
+        std::vector<const char*> requiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+        if (enableValidationLayers) {
+            requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        }
+
+        return requiredExtensions;
+    }
+
+    std::vector<VkExtensionProperties> getAvailableExtensions() {
+        uint32_t extensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+
+        return availableExtensions;
+    }
 
     void createInstance() {
+        if (enableValidationLayers && !checkValidationLayerSupport()) {
+            throw std::runtime_error("validation layers requested, but not available!");
+        }
+
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "Hello Triangle";
@@ -37,50 +136,30 @@ private:
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
 
-        uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions;
-        
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-        if (glfwExtensions == NULL) {
-            throw std::runtime_error("failed to get required extensions!");
+        std::vector<const char*> requiredExtensions = getRequiredExtensions();
+        std::vector<VkExtensionProperties> availableExtensions = getAvailableExtensions();
+
+
+        if (!checkExtensionSupport(requiredExtensions, availableExtensions)) {
+            throw std::runtime_error("not all required extensions are available!");
         }
 
-        std::vector<const char*> requiredExtensions(glfwExtensions ,glfwExtensions + glfwExtensionCount);
-
-        uint32_t extensionCount = 0;
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-        std::vector<VkExtensionProperties> extensions(extensionCount);
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
-        std::set<std::string> availableExtensions;
-        std::cout << "available extensions:\n";
-        for (const auto& extension : extensions) {
-            auto result = availableExtensions.insert(std::string(extension.extensionName));
-            std::cout << '\t' << *result.first << '\n';
-        }
-
-        bool all_available = true;
-        std::cout << "required extensions:\n";
-        for (const auto& extension : requiredExtensions) {
-            std::cout << '\t' << extension << " ";
-            
-            if (availableExtensions.count(std::string(extension))) {
-                std::cout << "AVAILABLE\n";
-            }
-            else {
-                std::cout << "MISSING\n";
-                all_available = false;
-            }
-        }
-
-        if (!all_available) {
-            throw std::runtime_error("fnot all required extensions are available!");
-        }
-        
-        createInfo.enabledExtensionCount = glfwExtensionCount;
-        createInfo.ppEnabledExtensionNames = glfwExtensions;
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+        createInfo.ppEnabledExtensionNames = requiredExtensions.data();
         createInfo.enabledLayerCount = 0;
+
+        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+        if (enableValidationLayers) {
+            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+            createInfo.ppEnabledLayerNames = validationLayers.data();
+
+            populateDebugMessengerCreateInfo(debugCreateInfo);
+            createInfo.pNext = static_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&debugCreateInfo);
+        }
+        else {
+            createInfo.enabledLayerCount = 0;
+            createInfo.pNext = nullptr;
+        }
 
         if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
             throw std::runtime_error("failed to create instance!");
@@ -96,8 +175,83 @@ private:
         window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
     }
 
+    void setupDebugMessenger() {
+        if (!enableValidationLayers) return;
+
+        VkDebugUtilsMessengerCreateInfoEXT createInfo;
+        populateDebugMessengerCreateInfo(createInfo);
+
+        if (CreateDebugUtilsMessengerExt(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+            throw std::runtime_error("failed to set up debug messenger!");
+        }
+    }
+
+    bool isDeviceSuitable(VkPhysicalDevice device) {
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+        VkPhysicalDeviceFeatures deviceFeatures;
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+        QueueFamilyIndices indices = findQueueFamilies(device);
+
+        return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
+            && indices.isComplete();
+    }
+
+    void pickPhysicalDevice() {
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+        if (deviceCount == 0) {
+            throw std::runtime_error("no physical devices with vulkan support found!");
+        }
+
+        std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices.data());
+
+        for (const auto& device : physicalDevices) {
+            if (isDeviceSuitable(device)) {
+                physicalDevice = device;
+                return;
+            }
+        }
+
+        throw std::runtime_error("no suitable physical device found!");
+    }
+
+    void createLogicalDevice() {
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+        queueCreateInfo.queueCount = 1;
+
+        float queuePriority = 1.0f;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+
+        VkPhysicalDeviceFeatures deviceFeatures{};
+
+        VkDeviceCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        createInfo.pQueueCreateInfos = &queueCreateInfo;
+        createInfo.queueCreateInfoCount = 1;
+
+        createInfo.pEnabledFeatures = &deviceFeatures;
+
+        createInfo.enabledExtensionCount = 0;
+
+        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create logical device!");
+        }
+    }
+
     void initVulkan() {
         createInstance();
+        setupDebugMessenger();
+        pickPhysicalDevice();
+        createLogicalDevice();
     }
 
     void mainLoop() {
@@ -107,6 +261,11 @@ private:
     }
 
     void cleanup() {
+        if (enableValidationLayers) {
+            DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        }
+        vkDestroyDevice(device, nullptr);
+
         vkDestroyInstance(instance, nullptr);
         
         glfwDestroyWindow(window);
