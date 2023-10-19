@@ -149,11 +149,18 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="queues.cpp" />
     <ClCompile Include="swapChain.cpp" />
+    <ClCompile Include="shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="debugLayer.h" />
+    <ClInclude Include="shader.h" />
     <ClInclude Include="queues.h" />
     <ClInclude Include="swapChain.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="compile.bat" />
+    <None Include="triangle.frag" />
+    <None Include="triangle.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
