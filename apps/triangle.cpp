@@ -7,11 +7,12 @@
 #include <vector>
 #include <format>
 #include <set>
+#include <cstring>
 
-#include "debugLayer.h"
-#include "queues.h"
-#include "swapChain.h"
-#include "shader.h"
+#include <vk/debugLayer.hpp>
+#include <vk/queues.hpp>
+#include <vk/swapChain.hpp>
+#include <vk/shader.hpp>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -440,12 +441,12 @@ private:
     }
 
     void createGraphicsPipeline() {
-        auto vertShaderCode = readFile("triangle_vert.spv");
-        auto fragShaderCode = readFile("triangle_frag.spv");
+        auto vertShaderCode = readFile("../shaders/triangle.vert.spv");
+        auto fragShaderCode = readFile("../shaders/triangle.frag.spv");
 
         VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
-        
+
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -690,7 +691,7 @@ private:
         // - Present the swap chain image
         vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
         vkResetFences(device, 1, &inFlightFence);
-        
+
         uint32_t imageIndex;
         vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 

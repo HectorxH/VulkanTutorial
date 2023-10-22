@@ -1,10 +1,11 @@
-#include "swapChain.h"
+#include <vk/swapChain.hpp>
 
 #include <algorithm>
+#include <limits>  
 
 SwapChainSupportDetails querySwapCahinSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
 	SwapChainSupportDetails details;
-	
+
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 
 	uint32_t formatCount;
@@ -43,12 +44,12 @@ VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avai
 			return availablePresentMode;
 		}
 	}
-	
+
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
 VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) {
-	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+	if (capabilities.currentExtent.width != std::numeric_limits<unsigned int>::max()) {
 		return capabilities.currentExtent;
 	}
 	else {
