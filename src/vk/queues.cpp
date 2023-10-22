@@ -4,14 +4,13 @@
 #include <stdexcept>
 #include <vector>
 
-bool QueueFamilyIndices::isComplete() {
+
+bool vk::QueueFamilyIndices::isComplete() {
 	return graphicsFamily.has_value()
 		&& presentFamily.has_value();
 }
 
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
-	QueueFamilyIndices indices;
-
+vk::QueueFamilyIndices::QueueFamilyIndices(VkPhysicalDevice device, std::shared_ptr<vk::Surface> surface) {
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
@@ -21,21 +20,19 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 	int i = 0;
 	for (const auto& queueFamily : queueFamilies) {
 		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-			indices.graphicsFamily = i;
+			graphicsFamily = i;
 		}
 
 		VkBool32 presentSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface->surface, &presentSupport);
 		if (presentSupport) {
-			indices.presentFamily = i;
+			presentFamily = i;
 		}
 
-		if (indices.isComplete()) {
+		if (isComplete()) {
 			break;
 		}
 
 		i++;
 	}
-
-	return indices;
 }

@@ -3,52 +3,48 @@
 #include <algorithm>
 #include <limits>  
 
-SwapChainSupportDetails querySwapCahinSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
-	SwapChainSupportDetails details;
-
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+vk::SwapChainSupportDetails::SwapChainSupportDetails(VkPhysicalDevice device, std::shared_ptr<vk::Surface> surface) {
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface->surface, &capabilities);
 
 	uint32_t formatCount;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface->surface, &formatCount, nullptr);
 
 	if (formatCount != 0) {
-		details.formats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+		formats.resize(formatCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface->surface, &formatCount, formats.data());
 	}
 
 	uint32_t presentModeCount;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface->surface, &presentModeCount, nullptr);
 
 	if (presentModeCount != 0) {
-		details.presentModes.resize(presentModeCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+		presentModes.resize(presentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface->surface, &presentModeCount, presentModes.data());
 	}
-
-	return details;
 }
 
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
-	for (const auto& availableFormat : availableFormats) {
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB
-			&& availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-			return availableFormat;
+VkSurfaceFormatKHR vk::SwapChainSupportDetails::chooseSwapSurfaceFormat() {
+	for (const auto& format : formats) {
+		if (format.format == VK_FORMAT_B8G8R8A8_SRGB
+			&& format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return format;
 		}
 	}
 
-	return availableFormats[0];
+	return formats[0];
 }
 
-VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
-	for (const auto& availablePresentMode : availablePresentModes) {
-		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-			return availablePresentMode;
+VkPresentModeKHR vk::SwapChainSupportDetails::chooseSwapPresentMode() {
+	for (const auto& presentMode : presentModes) {
+		if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+			return presentMode;
 		}
 	}
 
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) {
+VkExtent2D vk::SwapChainSupportDetails::chooseSwapExtent(GLFWwindow* window) {
 	if (capabilities.currentExtent.width != std::numeric_limits<unsigned int>::max()) {
 		return capabilities.currentExtent;
 	}
