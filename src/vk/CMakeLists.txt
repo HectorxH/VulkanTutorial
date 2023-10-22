@@ -4,7 +4,7 @@ add_library(
     vk
     instance.cpp
     surface.cpp
-    devices.cpp
+    device.cpp
     queues.cpp
     shader.cpp
     swapChain.cpp

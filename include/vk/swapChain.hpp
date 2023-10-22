@@ -3,8 +3,6 @@
 #include <GLFW/glfw3.h>
 
 #include <vk/surface.hpp>
-#include <vk/devices.hpp>
-
 #include <vector>
 #include <memory>
 

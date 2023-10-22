@@ -8,11 +8,10 @@
 #include <memory>
 
 namespace vk {
-    class PhysicalDevice;
-    class VirtualDevice;
+    class Device;
 }
 
-class vk::PhysicalDevice {
+class vk::Device {
 private:
     std::shared_ptr<vk::Instance> instance;
     std::shared_ptr<vk::Surface> surface;
@@ -21,8 +20,12 @@ private:
     bool checkDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions);
 
 public:
-    VkPhysicalDevice device;
+    VkPhysicalDevice physicalDevice;
     vk::QueueFamilyIndices indices;
+    VkDevice device;
+    VkQueue presentQueue;
+    VkQueue graphicsQueue;
 
-    PhysicalDevice(std::shared_ptr<vk::Instance> instance, std::shared_ptr<vk::Surface> surface, const std::vector<const char*>& requiredExtensions);
+    Device(std::shared_ptr<vk::Instance> instance, std::shared_ptr<vk::Surface> surface, const std::vector<const char*>& requiredExtensions);
+    ~Device();
 };
