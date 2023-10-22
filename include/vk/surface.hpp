@@ -3,16 +3,18 @@
 
 #include <vk/instance.hpp>
 
+#include <memory>
+
 namespace vk {
     class Surface;
 }
 
 class vk::Surface {
 private:
-    vk::Instance* instance;
+    std::shared_ptr<vk::Instance> instance;
 public:
     VkSurfaceKHR surface;
 
-    void init(vk::Instance& instance, GLFWwindow* window);
+    Surface(std::shared_ptr<vk::Instance> instance, GLFWwindow* window);
     ~Surface();
 };

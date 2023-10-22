@@ -18,8 +18,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     return VK_FALSE;
 }
 
-void vk::Instance::init(GLFWwindow* window, const std::vector<const char*>& validationLayers) {
-    enableValidationLayers = !validationLayers.empty();
+vk::Instance::Instance(GLFWwindow* window, const std::vector<const char*>& validationLayers) : enableValidationLayers(!validationLayers.empty()) {
     if (enableValidationLayers && !checkValidationLayerSupport(validationLayers)) {
         throw std::runtime_error("validation layers requested, but not available!");
     }

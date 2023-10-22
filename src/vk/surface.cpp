@@ -3,9 +3,8 @@
 #include <stdexcept>
 
 
-void vk::Surface::init(vk::Instance& instance, GLFWwindow* window) {
-    this->instance = &instance;
-    if (glfwCreateWindowSurface(instance.instance, window, nullptr, &surface) != VK_SUCCESS) {
+vk::Surface::Surface(std::shared_ptr<vk::Instance> instance, GLFWwindow* window) : instance(instance) {
+    if (glfwCreateWindowSurface(instance->instance, window, nullptr, &surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
 }

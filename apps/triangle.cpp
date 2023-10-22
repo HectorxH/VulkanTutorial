@@ -8,6 +8,7 @@
 #include <format>
 #include <set>
 #include <cstring>
+#include <memory>
 
 #include <vk/instance.hpp>
 #include <vk/surface.hpp>
@@ -38,8 +39,8 @@ public:
     HelloTriangleApplication() {
         initWindow();
 
-        instance.init(window, validationLayers);
-        surface.init(instance, window);
+        instance = std::make_shared<vk::Instance>(window, validationLayers);
+        surface = std::make_shared<vk::Surface>(instance, window);
 
 
         pickPhysicalDevice();
@@ -61,8 +62,8 @@ public:
 
 private:
     GLFWwindow* window;
-    vk::Instance instance;
-    vk::Surface surface;
+    std::shared_ptr<vk::Instance> instance;
+    std::shared_ptr<vk::Surface> surface;
     VkPhysicalDevice physicalDevice;
     VkDevice device;
     VkQueue presentQueue;
@@ -116,13 +117,13 @@ private:
         VkPhysicalDeviceFeatures deviceFeatures;
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-        QueueFamilyIndices indices = findQueueFamilies(device, surface.surface);
+        QueueFamilyIndices indices = findQueueFamilies(device, surface->surface);
 
         bool extensionsSupported = checkDeviceExtensionSupport(device);
 
         bool swapChainAdequate = false;
         if (extensionsSupported) {
-            SwapChainSupportDetails swapChainSupport = querySwapCahinSupport(device, surface.surface);
+            SwapChainSupportDetails swapChainSupport = querySwapCahinSupport(device, surface->surface);
             swapChainAdequate = !swapChainSupport.formats.empty()
                 && !swapChainSupport.presentModes.empty();
         }
@@ -135,13 +136,13 @@ private:
 
     void pickPhysicalDevice() {
         uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(instance.instance, &deviceCount, nullptr);
+        vkEnumeratePhysicalDevices(instance->instance, &deviceCount, nullptr);
         if (deviceCount == 0) {
             throw std::runtime_error("no physical devices with vulkan support found!");
         }
 
         std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
-        vkEnumeratePhysicalDevices(instance.instance, &deviceCount, physicalDevices.data());
+        vkEnumeratePhysicalDevices(instance->instance, &deviceCount, physicalDevices.data());
 
         for (const auto& device : physicalDevices) {
             if (isDeviceSuitable(device)) {
@@ -154,7 +155,7 @@ private:
     }
 
     void createLogicalDevice() {
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface.surface);
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface->surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = {
@@ -194,7 +195,7 @@ private:
     }
 
     void createSwapChain() {
-        SwapChainSupportDetails swapChainSupport = querySwapCahinSupport(physicalDevice, surface.surface);
+        SwapChainSupportDetails swapChainSupport = querySwapCahinSupport(physicalDevice, surface->surface);
 
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
         VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -207,7 +208,7 @@ private:
 
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = surface.surface;
+        createInfo.surface = surface->surface;
         createInfo.minImageCount = imageCount;
         createInfo.imageFormat = surfaceFormat.format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -215,7 +216,7 @@ private:
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface.surface);
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface->surface);
         uint32_t queueFamilyIndices[] = {
             indices.graphicsFamily.value(),
             indices.presentFamily.value(),
@@ -455,7 +456,7 @@ private:
     }
 
     void createCommandPool() {
-        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface.surface);
+        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface->surface);
 
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;

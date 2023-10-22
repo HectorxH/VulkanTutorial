@@ -23,7 +23,6 @@ private:
 public:
     VkInstance instance;
 
+    Instance(GLFWwindow* window, const std::vector<const char*>& validationLayers);
     ~Instance();
-
-    void init(GLFWwindow* window, const std::vector<const char*>& validationLayers);
 };
