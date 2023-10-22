@@ -1,5 +1,6 @@
 #pragma once
-#include <vulkan/vulkan.h>
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 #include <vector>
 
@@ -17,11 +18,12 @@ private:
     bool checkExtensionSupport(const std::vector<const char*>& requiredExtensions, const std::vector<VkExtensionProperties>& aveilableExtensions);
     VkResult CreateDebugUtilsMessengerExt(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
     void DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
+    std::vector<const char*> getRequiredExtensions();
 
 public:
     VkInstance instance;
 
     ~Instance();
 
-    void init(std::vector<const char*>& requiredExtensions, const std::vector<const char*>& validationLayers);
+    void init(GLFWwindow* window, const std::vector<const char*>& validationLayers);
 };

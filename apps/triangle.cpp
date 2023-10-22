@@ -10,6 +10,7 @@
 #include <cstring>
 
 #include <vk/instance.hpp>
+#include <vk/surface.hpp>
 
 #include <vk/queues.hpp>
 #include <vk/swapChain.hpp>
@@ -37,14 +38,20 @@ public:
     HelloTriangleApplication() {
         initWindow();
 
-        auto requiredExtensions = getRequiredExtensions();
-        instance.init(requiredExtensions, validationLayers);
+        instance.init(window, validationLayers);
+        surface.init(instance, window);
 
-        if (glfwCreateWindowSurface(instance.instance, window, nullptr, &surface) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create window surface!");
-        }
 
-        initVulkan();
+        pickPhysicalDevice();
+        createLogicalDevice();
+        createSwapChain();
+        createImageViews();
+        createRenderPass();
+        createGraphicsPipeline();
+        createFramebuffers();
+        createCommandPool();
+        createCommandBuffer();
+        createSyncObjects();
     }
 
     void run() {
@@ -55,9 +62,9 @@ public:
 private:
     GLFWwindow* window;
     vk::Instance instance;
+    vk::Surface surface;
     VkPhysicalDevice physicalDevice;
     VkDevice device;
-    VkSurfaceKHR surface;
     VkQueue presentQueue;
     VkQueue graphicsQueue;
     VkSwapchainKHR swapChain;
@@ -86,19 +93,6 @@ private:
         window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
     }
 
-    std::vector<const char*> getRequiredExtensions() {
-        uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions;
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-        if (glfwExtensions == NULL) {
-            throw std::runtime_error("failed to get required extensions!");
-        }
-
-        std::vector<const char*> requiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-        return requiredExtensions;
-    }
-
     bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
         uint32_t extensionCount;
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -122,13 +116,13 @@ private:
         VkPhysicalDeviceFeatures deviceFeatures;
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-        QueueFamilyIndices indices = findQueueFamilies(device, surface);
+        QueueFamilyIndices indices = findQueueFamilies(device, surface.surface);
 
         bool extensionsSupported = checkDeviceExtensionSupport(device);
 
         bool swapChainAdequate = false;
         if (extensionsSupported) {
-            SwapChainSupportDetails swapChainSupport = querySwapCahinSupport(device, surface);
+            SwapChainSupportDetails swapChainSupport = querySwapCahinSupport(device, surface.surface);
             swapChainAdequate = !swapChainSupport.formats.empty()
                 && !swapChainSupport.presentModes.empty();
         }
@@ -160,7 +154,7 @@ private:
     }
 
     void createLogicalDevice() {
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface.surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = {
@@ -199,14 +193,8 @@ private:
         vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     }
 
-    void createSurface() {
-        if (glfwCreateWindowSurface(instance.instance, window, nullptr, &surface) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create window surface!");
-        }
-    }
-
     void createSwapChain() {
-        SwapChainSupportDetails swapChainSupport = querySwapCahinSupport(physicalDevice, surface);
+        SwapChainSupportDetails swapChainSupport = querySwapCahinSupport(physicalDevice, surface.surface);
 
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
         VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -219,7 +207,7 @@ private:
 
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = surface;
+        createInfo.surface = surface.surface;
         createInfo.minImageCount = imageCount;
         createInfo.imageFormat = surfaceFormat.format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -227,7 +215,7 @@ private:
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface.surface);
         uint32_t queueFamilyIndices[] = {
             indices.graphicsFamily.value(),
             indices.presentFamily.value(),
@@ -467,7 +455,7 @@ private:
     }
 
     void createCommandPool() {
-        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
+        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface.surface);
 
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -554,19 +542,6 @@ private:
         }
     }
 
-    void initVulkan() {
-        pickPhysicalDevice();
-        createLogicalDevice();
-        createSwapChain();
-        createImageViews();
-        createRenderPass();
-        createGraphicsPipeline();
-        createFramebuffers();
-        createCommandPool();
-        createCommandBuffer();
-        createSyncObjects();
-    }
-
     void drawFrame() {
         // - Wait for the previous frame to finish
         // - Acquire an image from the swap chain
@@ -649,7 +624,6 @@ private:
         vkDestroyRenderPass(device, renderPass, nullptr);
         vkDestroySwapchainKHR(device, swapChain, nullptr);
         vkDestroyDevice(device, nullptr);
-        vkDestroySurfaceKHR(instance.instance, surface, nullptr);
         glfwDestroyWindow(window);
         glfwTerminate();
     }

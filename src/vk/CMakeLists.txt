@@ -3,6 +3,7 @@ file(GLOB HEADER_LIST CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/include/vk/*.hpp"
 add_library(
     vk
     instance.cpp
+    surface.cpp
     queues.cpp
     shader.cpp
     swapChain.cpp

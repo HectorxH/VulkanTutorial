@@ -18,14 +18,15 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     return VK_FALSE;
 }
 
-void vk::Instance::init(std::vector<const char*>& requiredExtensions, const std::vector<const char*>& validationLayers) {
+void vk::Instance::init(GLFWwindow* window, const std::vector<const char*>& validationLayers) {
     enableValidationLayers = !validationLayers.empty();
+    if (enableValidationLayers && !checkValidationLayerSupport(validationLayers)) {
+        throw std::runtime_error("validation layers requested, but not available!");
+    }
+
+    std::vector<const char*> requiredExtensions = getRequiredExtensions();
     if (enableValidationLayers) {
         requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-
-        if (!checkValidationLayerSupport(validationLayers)) {
-            throw std::runtime_error("validation layers requested, but not available!");
-        }
     }
 
     VkApplicationInfo appInfo{};
@@ -86,6 +87,19 @@ vk::Instance::~Instance() {
         DestroyDebugUtilsMessengerEXT(debugMessenger, nullptr);
     }
     vkDestroyInstance(instance, nullptr);
+}
+
+std::vector<const char*> vk::Instance::getRequiredExtensions() {
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    if (glfwExtensions == NULL) {
+        throw std::runtime_error("failed to get required extensions!");
+    }
+
+    std::vector<const char*> requiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+    return requiredExtensions;
 }
 
 bool vk::Instance::checkValidationLayerSupport(const std::vector<const char*>& validationLayers) {
