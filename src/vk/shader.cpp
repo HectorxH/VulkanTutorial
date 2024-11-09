@@ -1,3 +1,4 @@
+#include <format>
 #include <fstream>
 #include <vector>
 #include <vk/shader.hpp>
@@ -5,7 +6,7 @@
 std::vector<char> readFile(const std::string &filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
   if (!file.is_open()) {
-    throw std::runtime_error("failed to open the file!");
+    throw std::runtime_error(std::format("failed to open file: {}", filename));
   }
 
   size_t fileSize = static_cast<size_t>(file.tellg());
@@ -28,9 +29,9 @@ VkShaderModule createShaderModule(
   createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
   VkShaderModule shaderModule;
-  if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) !=
-      VK_SUCCESS) {
-    throw std::runtime_error("failed to create shader module!");
+  if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule)
+      != VK_SUCCESS) {
+    throw std::runtime_error("failed to create shader module");
   }
 
   return shaderModule;

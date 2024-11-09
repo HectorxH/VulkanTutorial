@@ -13,7 +13,7 @@ vk::Device::Device(
   uint32_t deviceCount = 0;
   vkEnumeratePhysicalDevices(instance->instance, &deviceCount, nullptr);
   if (deviceCount == 0) {
-    throw std::runtime_error("no physical devices with vulkan support found!");
+    throw std::runtime_error("no physical devices with vulkan support found");
   }
 
   std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
@@ -31,7 +31,7 @@ vk::Device::Device(
   }
 
   if (!found_suitable_device) {
-    throw std::runtime_error("no suitable physical device found!");
+    throw std::runtime_error("no suitable physical device found");
   }
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -65,9 +65,9 @@ vk::Device::Device(
       static_cast<uint32_t>(requiredExtensions.size());
   createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
-  if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) !=
-      VK_SUCCESS) {
-    throw std::runtime_error("failed to create logical device!");
+  if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device)
+      != VK_SUCCESS) {
+    throw std::runtime_error("failed to create logical device");
   }
 
   vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
@@ -93,12 +93,12 @@ bool vk::Device::isDeviceSuitable(
   bool swapChainAdequate = false;
   if (extensionsSupported) {
     SwapChainSupportDetails swapChainSupport(device, surface);
-    swapChainAdequate = !swapChainSupport.formats.empty() &&
-                        !swapChainSupport.presentModes.empty();
+    swapChainAdequate = !swapChainSupport.formats.empty()
+                        && !swapChainSupport.presentModes.empty();
   }
 
-  return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
-         indices.isComplete() && extensionsSupported && swapChainAdequate;
+  return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
+         && indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
 bool vk::Device::checkDeviceExtensionSupport(

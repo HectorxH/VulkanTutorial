@@ -1,3 +1,5 @@
+#include <GLFW/glfw3.h>
+
 #include <cstring>
 #include <format>
 #include <iostream>
@@ -21,9 +23,9 @@ vk::Instance::Instance(
     GLFWwindow *window, const std::vector<const char *> &validationLayers
 )
     : enableValidationLayers(!validationLayers.empty()) {
-  if (enableValidationLayers &&
-      !checkValidationLayerSupport(validationLayers)) {
-    throw std::runtime_error("validation layers requested, but not available!");
+  if (enableValidationLayers
+      && !checkValidationLayerSupport(validationLayers)) {
+    throw std::runtime_error("validation layers requested, but not available");
   }
 
   std::vector<const char *> requiredExtensions = getRequiredExtensions();
@@ -52,7 +54,7 @@ vk::Instance::Instance(
   );
 
   if (!checkExtensionSupport(requiredExtensions, availableExtensions)) {
-    throw std::runtime_error("not all required extensions are available!");
+    throw std::runtime_error("not all required extensions are available");
   }
 
   createInfo.enabledExtensionCount =
@@ -75,16 +77,16 @@ vk::Instance::Instance(
   }
 
   if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create instance!");
+    throw std::runtime_error("failed to create instance");
   }
 
   if (enableValidationLayers) {
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
 
-    if (CreateDebugUtilsMessengerExt(&createInfo, nullptr, &debugMessenger) !=
-        VK_SUCCESS) {
-      throw std::runtime_error("failed to set up debug messenger!");
+    if (CreateDebugUtilsMessengerExt(&createInfo, nullptr, &debugMessenger)
+        != VK_SUCCESS) {
+      throw std::runtime_error("failed to set up debug messenger");
     }
   }
 }
@@ -101,7 +103,7 @@ std::vector<const char *> vk::Instance::getRequiredExtensions() {
   const char **glfwExtensions;
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
   if (glfwExtensions == NULL) {
-    throw std::runtime_error("failed to get required extensions!");
+    throw std::runtime_error("failed to get required extensions");
   }
 
   std::vector<const char *> requiredExtensions(
@@ -205,13 +207,13 @@ void vk::Instance::populateDebugMessengerCreateInfo(
 ) {
   createInfo = {};
   createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-  createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                               VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+  createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+                               | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+                               | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
   //  | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
-  createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+  createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+                           | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+                           | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
   createInfo.pfnUserCallback = debugCallback;
   createInfo.pUserData = nullptr;  // Optional
 }

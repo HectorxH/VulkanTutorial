@@ -3,10 +3,8 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <format>
 #include <iostream>
 #include <memory>
-#include <set>
 #include <stdexcept>
 #include <vector>
 #include <vk/device.hpp>
@@ -25,6 +23,7 @@ const std::vector<const char *> validationLayers = {};
 const std::vector<const char *> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
+
 #endif
 
 const std::vector<const char *> deviceExtensions = {
@@ -76,6 +75,11 @@ class HelloTriangleApplication {
   VkFence inFlightFence;
 
   void initWindow() {
+#ifndef NDEBUG
+    glfwSetErrorCallback([](int _, const char *desc) {
+      std::cout << "Error: " << desc << "\n";
+    });
+#endif
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -95,8 +99,8 @@ class HelloTriangleApplication {
     VkExtent2D extent = swapChainSupport.chooseSwapExtent(window);
 
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0 &&
-        imageCount > swapChainSupport.capabilities.maxImageCount) {
+    if (swapChainSupport.capabilities.maxImageCount > 0
+        && imageCount > swapChainSupport.capabilities.maxImageCount) {
       imageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
@@ -132,10 +136,9 @@ class HelloTriangleApplication {
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-    if (vkCreateSwapchainKHR(
-            device->device, &createInfo, nullptr, &swapChain
-        ) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create swap chain!");
+    if (vkCreateSwapchainKHR(device->device, &createInfo, nullptr, &swapChain)
+        != VK_SUCCESS) {
+      throw std::runtime_error("failed to create swap chain");
     }
 
     vkGetSwapchainImagesKHR(device->device, swapChain, &imageCount, nullptr);
@@ -167,8 +170,9 @@ class HelloTriangleApplication {
       createInfo.subresourceRange.layerCount = 1;
       if (vkCreateImageView(
               device->device, &createInfo, nullptr, &swapChainImageViews[i]
-          ) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create image views!");
+          )
+          != VK_SUCCESS) {
+        throw std::runtime_error("failed to create image views");
       }
     }
   }
@@ -212,8 +216,9 @@ class HelloTriangleApplication {
 
     if (vkCreateRenderPass(
             device->device, &renderPassInfo, nullptr, &renderPass
-        ) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create render pass!");
+        )
+        != VK_SUCCESS) {
+      throw std::runtime_error("failed to create render pass");
     }
   }
 
@@ -292,8 +297,8 @@ class HelloTriangleApplication {
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
     colorBlendAttachment.colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+        | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachment.blendEnable = VK_FALSE;
     // colorBlendAttachment.blendEnable = VK_TRUE;
     // colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -316,8 +321,9 @@ class HelloTriangleApplication {
 
     if (vkCreatePipelineLayout(
             device->device, &pipelineLayoutInfo, nullptr, &pipelineLayout
-        ) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create pipeline layout!");
+        )
+        != VK_SUCCESS) {
+      throw std::runtime_error("failed to create pipeline layout");
     }
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -345,8 +351,9 @@ class HelloTriangleApplication {
             &pipelineInfo,
             nullptr,
             &graphicsPipeline
-        ) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create graphics pipeline!");
+        )
+        != VK_SUCCESS) {
+      throw std::runtime_error("failed to create graphics pipeline");
     }
 
     vkDestroyShaderModule(device->device, fragShaderModule, nullptr);
@@ -373,8 +380,9 @@ class HelloTriangleApplication {
               &framebufferInfo,
               nullptr,
               &swapChainFramebuffers[i]
-          ) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create framebuffer!");
+          )
+          != VK_SUCCESS) {
+        throw std::runtime_error("failed to create framebuffer");
       }
     }
   }
@@ -387,9 +395,9 @@ class HelloTriangleApplication {
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-    if (vkCreateCommandPool(device->device, &poolInfo, nullptr, &commandPool) !=
-        VK_SUCCESS) {
-      throw std::runtime_error("failed to create command pool!");
+    if (vkCreateCommandPool(device->device, &poolInfo, nullptr, &commandPool)
+        != VK_SUCCESS) {
+      throw std::runtime_error("failed to create command pool");
     }
   }
 
@@ -400,9 +408,9 @@ class HelloTriangleApplication {
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(device->device, &allocInfo, &commandBuffer) !=
-        VK_SUCCESS) {
-      throw std::runtime_error("failed to allocate command buffers!");
+    if (vkAllocateCommandBuffers(device->device, &allocInfo, &commandBuffer)
+        != VK_SUCCESS) {
+      throw std::runtime_error("failed to allocate command buffers");
     }
   }
 
@@ -413,7 +421,7 @@ class HelloTriangleApplication {
     beginInfo.pInheritanceInfo = nullptr;
 
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-      throw std::runtime_error("failed to begin recording command buffer!");
+      throw std::runtime_error("failed to begin recording command buffer");
     }
 
     VkRenderPassBeginInfo renderPassInfo{};
@@ -454,7 +462,7 @@ class HelloTriangleApplication {
 
     vkCmdEndRenderPass(commandBuffer);
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-      throw std::runtime_error("failed to record command buffer!");
+      throw std::runtime_error("failed to record command buffer");
     }
   }
 
@@ -468,13 +476,13 @@ class HelloTriangleApplication {
 
     if (vkCreateSemaphore(
             device->device, &semaphoreInfo, nullptr, &imageAvailableSemaphore
-        ) != VK_SUCCESS ||
-        vkCreateSemaphore(
-            device->device, &semaphoreInfo, nullptr, &renderFinishedSemaphore
-        ) != VK_SUCCESS ||
-        vkCreateFence(device->device, &fenceInfo, nullptr, &inFlightFence) !=
-            VK_SUCCESS) {
-      throw std::runtime_error("failed to create semaphores!");
+        ) != VK_SUCCESS
+        || vkCreateSemaphore(
+               device->device, &semaphoreInfo, nullptr, &renderFinishedSemaphore
+           ) != VK_SUCCESS
+        || vkCreateFence(device->device, &fenceInfo, nullptr, &inFlightFence)
+               != VK_SUCCESS) {
+      throw std::runtime_error("failed to create semaphores");
     }
   }
 
@@ -518,9 +526,9 @@ class HelloTriangleApplication {
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(device->graphicsQueue, 1, &submitInfo, inFlightFence) !=
-        VK_SUCCESS) {
-      throw std::runtime_error("failed to submit draw command buffer!");
+    if (vkQueueSubmit(device->graphicsQueue, 1, &submitInfo, inFlightFence)
+        != VK_SUCCESS) {
+      throw std::runtime_error("failed to submit draw command buffer");
     }
 
     VkPresentInfoKHR presentInfo{};
