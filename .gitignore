@@ -1,2 +1,7 @@
-.vscode
-build
+.vscode/
+build/
+CMakeFiles/
+_deps/
+Testing/
+CMakeCache.txt
+.cache
