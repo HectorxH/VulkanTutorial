@@ -1,124 +1,132 @@
-#include <vk/device.hpp>
-
-#include <vk/queues.hpp>
-#include <vk/swapChain.hpp>
-
 #include <cstring>
 #include <set>
+#include <vk/device.hpp>
+#include <vk/queues.hpp>
+#include <vk/swapChain.hpp>
 
 vk::Device::Device(
     std::shared_ptr<vk::Instance> instance,
     std::shared_ptr<vk::Surface> surface,
-    const std::vector<const char*>& requiredExtensions
-) : instance(instance), surface(surface) {
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance->instance, &deviceCount, nullptr);
-    if (deviceCount == 0) {
-        throw std::runtime_error("no physical devices with vulkan support found!");
+    const std::vector<const char *> &requiredExtensions
+)
+    : instance(instance), surface(surface) {
+  uint32_t deviceCount = 0;
+  vkEnumeratePhysicalDevices(instance->instance, &deviceCount, nullptr);
+  if (deviceCount == 0) {
+    throw std::runtime_error("no physical devices with vulkan support found!");
+  }
+
+  std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
+  vkEnumeratePhysicalDevices(
+      instance->instance, &deviceCount, physicalDevices.data()
+  );
+
+  bool found_suitable_device = false;
+  for (const auto &candidateDevice : physicalDevices) {
+    if (isDeviceSuitable(candidateDevice, requiredExtensions)) {
+      physicalDevice = candidateDevice;
+      found_suitable_device = true;
+      break;
     }
+  }
 
-    std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
-    vkEnumeratePhysicalDevices(instance->instance, &deviceCount, physicalDevices.data());
+  if (!found_suitable_device) {
+    throw std::runtime_error("no suitable physical device found!");
+  }
 
-    bool found_suitable_device = false;
-    for (const auto& candidateDevice : physicalDevices) {
-        if (isDeviceSuitable(candidateDevice, requiredExtensions)) {
-            physicalDevice = candidateDevice;
-            found_suitable_device = true;
-            break;
-        }
-    }
+  std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+  std::set<uint32_t> uniqueQueueFamilies = {
+      indices.graphicsFamily.value(),
+      indices.presentFamily.value(),
+  };
 
-    if (!found_suitable_device) {
-        throw std::runtime_error("no suitable physical device found!");
-    }
+  float queuePriority = 1.0f;
+  for (uint32_t queueFamily : uniqueQueueFamilies) {
+    VkDeviceQueueCreateInfo queueCreateInfo{};
+    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfo.queueFamilyIndex = queueFamily;
+    queueCreateInfo.queueCount = 1;
+    queueCreateInfo.pQueuePriorities = &queuePriority;
 
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {
-        indices.graphicsFamily.value(),
-        indices.presentFamily.value(),
-    };
+    queueCreateInfos.push_back(queueCreateInfo);
+  }
 
-    float queuePriority = 1.0f;
-    for (uint32_t queueFamily : uniqueQueueFamilies) {
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = queueFamily;
-        queueCreateInfo.queueCount = 1;
-        queueCreateInfo.pQueuePriorities = &queuePriority;
+  VkPhysicalDeviceFeatures deviceFeatures{};
 
-        queueCreateInfos.push_back(queueCreateInfo);
-    }
+  VkDeviceCreateInfo createInfo{};
+  createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+  createInfo.queueCreateInfoCount =
+      static_cast<uint32_t>(queueCreateInfos.size());
+  createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-    VkPhysicalDeviceFeatures deviceFeatures{};
+  createInfo.pEnabledFeatures = &deviceFeatures;
 
-    VkDeviceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-    createInfo.pQueueCreateInfos = queueCreateInfos.data();
+  createInfo.enabledExtensionCount =
+      static_cast<uint32_t>(requiredExtensions.size());
+  createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
-    createInfo.pEnabledFeatures = &deviceFeatures;
+  if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) !=
+      VK_SUCCESS) {
+    throw std::runtime_error("failed to create logical device!");
+  }
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
-    createInfo.ppEnabledExtensionNames = requiredExtensions.data();
-
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create logical device!");
-    }
-
-    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
-    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+  vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+  vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
 }
 
-vk::Device::~Device() {
-    vkDestroyDevice(device, nullptr);
+vk::Device::~Device() { vkDestroyDevice(device, nullptr); }
+
+bool vk::Device::isDeviceSuitable(
+    VkPhysicalDevice device, const std::vector<const char *> &requiredExtensions
+) {
+  VkPhysicalDeviceProperties deviceProperties;
+  vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+  VkPhysicalDeviceFeatures deviceFeatures;
+  vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+  indices = vk::QueueFamilyIndices(device, surface);
+
+  bool extensionsSupported =
+      checkDeviceExtensionSupport(device, requiredExtensions);
+
+  bool swapChainAdequate = false;
+  if (extensionsSupported) {
+    SwapChainSupportDetails swapChainSupport(device, surface);
+    swapChainAdequate = !swapChainSupport.formats.empty() &&
+                        !swapChainSupport.presentModes.empty();
+  }
+
+  return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+         indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
-bool vk::Device::isDeviceSuitable(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions) {
-    VkPhysicalDeviceProperties deviceProperties;
-    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+bool vk::Device::checkDeviceExtensionSupport(
+    VkPhysicalDevice device, const std::vector<const char *> &requiredExtensions
+) {
+  uint32_t extensionCount;
+  vkEnumerateDeviceExtensionProperties(
+      device, nullptr, &extensionCount, nullptr
+  );
 
-    VkPhysicalDeviceFeatures deviceFeatures;
-    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+  std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+  vkEnumerateDeviceExtensionProperties(
+      device, nullptr, &extensionCount, availableExtensions.data()
+  );
 
-    indices = vk::QueueFamilyIndices(device, surface);
-
-    bool extensionsSupported = checkDeviceExtensionSupport(device, requiredExtensions);
-
-    bool swapChainAdequate = false;
-    if (extensionsSupported) {
-        SwapChainSupportDetails swapChainSupport(device, surface);
-        swapChainAdequate = !swapChainSupport.formats.empty()
-            && !swapChainSupport.presentModes.empty();
+  for (const char *requiredExtension : requiredExtensions) {
+    bool extensionFound = false;
+    for (const auto &availableExtension : availableExtensions) {
+      if (strcmp(requiredExtension, availableExtension.extensionName) == 0) {
+        extensionFound = true;
+        break;
+      }
     }
 
-    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
-        && indices.isComplete()
-        && extensionsSupported
-        && swapChainAdequate;
-}
-
-bool vk::Device::checkDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions) {
-    uint32_t extensionCount;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
-
-
-    for (const char* requiredExtension : requiredExtensions) {
-        bool extensionFound = false;
-        for (const auto& availableExtension : availableExtensions) {
-            if (strcmp(requiredExtension, availableExtension.extensionName) == 0) {
-                extensionFound = true;
-                break;
-            }
-        }
-
-        if (!extensionFound) {
-            return false;
-        }
+    if (!extensionFound) {
+      return false;
     }
+  }
 
-    return true;
+  return true;
 }

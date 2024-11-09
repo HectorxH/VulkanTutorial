@@ -12,6 +12,7 @@ add_library(
 
 target_include_directories(vk PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_compile_features(vk PUBLIC cxx_std_20)
+target_compile_options(vk PUBLIC -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic)
 target_link_libraries(vk PUBLIC Vulkan::Vulkan glfw)
 
 

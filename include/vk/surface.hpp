@@ -1,20 +1,20 @@
 #pragma once
 #include <vulkan/vulkan.h>
 
+#include <memory>
 #include <vk/instance.hpp>
 
-#include <memory>
-
 namespace vk {
-    class Surface;
+class Surface;
 }
 
 class vk::Surface {
-private:
-    std::shared_ptr<vk::Instance> instance;
-public:
-    VkSurfaceKHR surface;
+ private:
+  std::shared_ptr<vk::Instance> instance;
 
-    Surface(std::shared_ptr<vk::Instance> instance, GLFWwindow* window);
-    ~Surface();
+ public:
+  VkSurfaceKHR surface;
+
+  Surface(std::shared_ptr<vk::Instance> instance, GLFWwindow* window);
+  ~Surface();
 };
