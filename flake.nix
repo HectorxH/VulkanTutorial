@@ -13,16 +13,16 @@
     in
     {
       devShell.${system} = pkgs.mkShell {
-        nativeBuildInputs = with pkgs; [
+        packages = with pkgs; [
           cmake
           just
 
           llvmPackages_18.libcxxStdenv
           llvmPackages_18.clang-tools
 
-          cppcheck
-
           vulkan-tools
+          vulkan-headers
+          vulkan-validation-layers
 
           doxygen
 
@@ -31,14 +31,6 @@
           glsl_analyzer
           glslang
           glslls
-        ];
-
-        buildInputs = with pkgs; [
-          llvmPackages_18.libcxxStdenv
-
-          vulkan-headers
-          vulkan-loader
-          vulkan-validation-layers
 
           glfw-wayland
           glm
@@ -47,6 +39,8 @@
         LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath (
           with pkgs;
           [
+            wayland
+
             glfw-wayland
             glm
           ]
